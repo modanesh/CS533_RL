@@ -1,0 +1,32 @@
+def VI_worker_v1(VI_server, data, worker_id, update_state):
+    env, workers_num, beta, epsilon = data
+    A = env.GetActionSpace()
+    S = env.GetStateSpace()
+
+    # get shared variable
+    V, _ = ray.get(VI_server.get_value_and_policy.remote())
+
+    # bellman backup
+
+    #INSERT YOUR CODE HERE
+    max_v = float('-inf')
+    max_a = 0
+    for action in range(A):
+    sum_r = 0
+    for state_next, prob in env.GetSuccessors(update_state, action):
+    if state_next == update_state:
+    continue
+    # ∑s′∈ST(s,a,s′)V(s′)
+    sum_r += prob * v[state_next]
+
+    # Vnew(s)=maxa∈AR(s,a)+β∑s′∈ST(s,a,s′)V(s′)
+    v_a = env.GetReward(update_state, action) + beta * sum_r
+
+    if v_a > max_v:
+    max_a = action
+    max_v = v_a
+
+    VI_server.update.remote(update_state, max_v, max_a)
+
+    # return ith worker
+    return worker_id
